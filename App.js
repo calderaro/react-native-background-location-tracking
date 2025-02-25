@@ -1,21 +1,25 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Button, View, Text, Dimensions } from "react-native";
+import { useLocationService } from "./LocationServiceModule";
+
+const { height, width } = Dimensions.get("window");
 
 export default function App() {
+  const { status, start, stop } = useLocationService();
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+    <View
+      style={{
+        paddingVertical: height * 0.2,
+        paddingHorizontal: width * 0.1,
+        gap: height * 0.1,
+      }}
+    >
+      <Text>
+        Location Service Status:{" "}
+        <Text style={{ fontWeight: "600" }}>{status}</Text>
+      </Text>
+      <Button title="Start Location Service" onPress={start} />
+      <Button title="Stop Location Service" onPress={stop} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
