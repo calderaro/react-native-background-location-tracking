@@ -62,13 +62,14 @@ class LocationService : Service() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.locations.forEach { location ->
                     Log.d("LocationService", "Coords: ${location.latitude}, ${location.longitude}")
+
+                    // Broadcast the location update
+                    val updateIntent = Intent("com.myapp.LOCATION_UPDATE")
+                    updateIntent.putExtra("latitude", location.latitude)
+                    updateIntent.putExtra("longitude", location.longitude)
+                    sendBroadcast(updateIntent)
+
                     postLocationToServer(location)
-                    // Broadcast location update so our module can forward it to JS.
-                    val intent = Intent("com.myapp.LOCATION_UPDATE").apply {
-                        putExtra("latitude", location.latitude)
-                        putExtra("longitude", location.longitude)
-                    }
-                    sendBroadcast(intent)
                 }
             }
         }

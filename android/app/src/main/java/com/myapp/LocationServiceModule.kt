@@ -26,27 +26,29 @@ class LocationServiceModule(reactContext: ReactApplicationContext) : ReactContex
         return "LocationServiceModule"
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun initialize() {
         super.initialize()
-        // Register a broadcast receiver to listen for location updates from the service.
+        // Register the broadcast receiver to listen for location updates.
         val filter = IntentFilter("com.myapp.LOCATION_UPDATE")
         locationUpdateReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                intent?.let {
-                    val latitude = it.getDoubleExtra("latitude", 0.0)
-                    val longitude = it.getDoubleExtra("longitude", 0.0)
-                    val map = Arguments.createMap().apply {
-                        putDouble("latitude", latitude)
-                        putDouble("longitude", longitude)
-                    }
-                    sendEvent("onLocationUpdate", map)
+            override fun onReceive(context: Context, intent: Intent) {
+                val lat = intent.getDoubleExtra("latitude", 0.0)
+                val lon = intent.getDoubleExtra("longitude", 0.0)
+                val params = Arguments.createMap().apply {
+                    putDouble("latitude", lat)
+                    putDouble("longitude", lon)
                 }
+                // Emit the event to JavaScript.
+                sendEvent("onLocationUpdate", params)
             }
         }
 
-        reactApplicationContext.registerReceiver(locationUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-
+        ContextCompat.registerReceiver(
+            reactApplicationContext,
+            locationUpdateReceiver,
+            filter,
+            ContextCompat.RECEIVER_EXPORTED
+        )
     }
 
     @ReactMethod
