@@ -12,6 +12,7 @@
 static BOOL isTracking = NO;
 // Global background task identifier.
 static UIBackgroundTaskIdentifier bgTask = UIBackgroundTaskInvalid;
+static NSString *trackingToken = nil;
 
 @interface LocationServiceModule ()
 
@@ -62,10 +63,11 @@ RCT_EXPORT_MODULE();
 }
 
 // Exported method to start tracking
-RCT_EXPORT_METHOD(start) {
+RCT_EXPORT_METHOD(start:(NSString *)token) {
     dispatch_async(dispatch_get_main_queue(), ^{
         if ([CLLocationManager locationServicesEnabled]) {
             [self.locationManager requestAlwaysAuthorization];
+            trackingToken = [token copy];
             [self.locationManager startUpdatingLocation];
             isTracking = YES;
             [self sendStatusUpdate];
@@ -85,6 +87,7 @@ RCT_EXPORT_METHOD(stop) {
         [self sendStatusUpdate];
         [self endBackgroundTask];
         RCTLogInfo(@"[LocationService] Stopped tracking");
+        trackingToken = nil;
     });
 }
 
@@ -138,17 +141,21 @@ RCT_EXPORT_METHOD(stop) {
 
 // Send location to server
 - (void)sendLocationToServer:(CLLocation *)location {
-    NSString *urlString = @"https://yourserver.com/api/location";
+    NSString *urlString = @"https://neat-ant-94.deno.dev/points";
     NSURL *url = [NSURL URLWithString:urlString];
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"POST";
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
 
-    NSDictionary *body = @{
+    NSMutableDictionary *body = [@{
         @"latitude": @(location.coordinate.latitude),
         @"longitude": @(location.coordinate.longitude)
-    };
+    } mutableCopy];
+     
+    if (trackingToken) {
+        body[@"token"] = trackingToken;
+    }
 
     NSError *error;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:body options:0 error:&error];

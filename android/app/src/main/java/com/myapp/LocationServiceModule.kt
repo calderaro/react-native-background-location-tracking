@@ -8,19 +8,30 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.annotation.RequiresApi
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import org.json.JSONObject
+import java.io.IOException
 
 class LocationServiceModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
     companion object {
         const val PERMISSION_REQUEST_CODE = 100
+        var trackingToken: String? = null
     }
 
     private var locationUpdateReceiver: BroadcastReceiver? = null
+    private val httpClient = OkHttpClient()
 
     override fun getName(): String {
         return "LocationServiceModule"
@@ -40,6 +51,9 @@ class LocationServiceModule(reactContext: ReactApplicationContext) : ReactContex
                 }
                 // Emit the event to JavaScript.
                 sendEvent("onLocationUpdate", params)
+
+                //Post to server
+                postLocationToServer(lat, lon)
             }
         }
 
@@ -52,16 +66,18 @@ class LocationServiceModule(reactContext: ReactApplicationContext) : ReactContex
     }
 
     @ReactMethod
-    fun start() {
+    fun start(token: String) {
         val currentActivity: Activity? = currentActivity
         val context = reactApplicationContext
 
-        if (LocationService.isServiceRunning) {
-            sendEvent("onStatusChanged", true)
+        if (currentActivity == null) {
             return
         }
 
-        if (currentActivity == null) {
+        trackingToken = token;
+
+        if (LocationService.isServiceRunning) {
+            sendEvent("onStatusChanged", true)
             return
         }
 
@@ -106,11 +122,36 @@ class LocationServiceModule(reactContext: ReactApplicationContext) : ReactContex
     fun stop() {
         reactApplicationContext.stopService(Intent(reactApplicationContext, LocationService::class.java))
         sendEvent("onStatusChanged", false)
+        trackingToken = null
     }
 
     private fun sendEvent(eventName: String, params: Any?) {
         reactApplicationContext
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
             .emit(eventName, params)
+    }
+
+    private fun postLocationToServer(latitude: Double, longitude: Double) {
+        // Replace with your actual server URL.
+        val url = "https://neat-ant-94.deno.dev/points"
+        val json = JSONObject().apply {
+            put("latitude", latitude)
+            put("longitude", longitude)
+            trackingToken?.let {
+                put("token", it)
+            }
+        }
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val body = json.toString().toRequestBody(mediaType)
+        val request = Request.Builder().url(url).post(body).build()
+        httpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
+            }
+            override fun onResponse(call: Call, response: Response) {
+                Log.d("LocationServiceModule", "Post to server result: ${response.code}")
+                response.close()
+            }
+        })
     }
 }

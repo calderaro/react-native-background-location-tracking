@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
@@ -14,10 +13,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.*
-import org.json.JSONObject
-import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaType
-import java.io.IOException
+
 
 class LocationService : Service() {
 
@@ -29,7 +25,7 @@ class LocationService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
-    private val httpClient = OkHttpClient()
+
 
     override fun onCreate() {
         super.onCreate()
@@ -68,8 +64,6 @@ class LocationService : Service() {
                     updateIntent.putExtra("latitude", location.latitude)
                     updateIntent.putExtra("longitude", location.longitude)
                     sendBroadcast(updateIntent)
-
-                    postLocationToServer(location)
                 }
             }
         }
@@ -99,25 +93,5 @@ class LocationService : Service() {
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(channel)
         }
-    }
-
-    private fun postLocationToServer(location: Location) {
-        // Replace with your actual server URL.
-        val url = "https://yourserver.com/api/location"
-        val json = JSONObject().apply {
-            put("lat", location.latitude)
-            put("lon", location.longitude)
-        }
-        val mediaType = "application/json; charset=utf-8".toMediaType()
-        val body = RequestBody.create(mediaType, json.toString())
-        val request = Request.Builder().url(url).post(body).build()
-        httpClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
-            }
-            override fun onResponse(call: Call, response: Response) {
-                response.close()
-            }
-        })
     }
 }

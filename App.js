@@ -18,7 +18,7 @@ export default function App() {
         Location Service Status:{" "}
         <Text style={{ fontWeight: "600" }}>{status}</Text>
       </Text>
-      <Button title="Start Location Service" onPress={start} />
+      <Button title="Start Location Service" onPress={() => start("123123-tracking-token")} />
       <Button title="Stop Location Service" onPress={stop} />
     </View>
   );

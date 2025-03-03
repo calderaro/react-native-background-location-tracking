@@ -3,7 +3,7 @@ import { NativeEventEmitter, NativeModules } from "react-native";
 
 interface LocationService {
   getStatus: () => boolean;
-  start: () => void;
+  start: (token: string) => void;
   stop: () => void;
 }
 
@@ -36,8 +36,8 @@ export function useLocationService() {
     };
   }, []);
 
-  function start() {
-    LocationServiceModule.start();
+  function start(token: string) {
+    LocationServiceModule.start(token);
   }
 
   function stop() {
